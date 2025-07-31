@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import LoginRegister from "./LoginRegister";
 import SearchResults from "./SearchResults";
+import NearbySearch from "./components/NearbySearch";
 import "./App.css";
 import queryTemplate from "./utils/templates";
 
@@ -398,6 +399,9 @@ function App() {
               <div className="home-illustration">
                 <span role="img" aria-label="home" style={{ fontSize: 60 }}>🏡</span>
               </div>
+            </div>
+            <div className="right-sidebar">
+              <NearbySearch />
             </div>
           </div>
         )}

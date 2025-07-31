@@ -1,57 +1,41 @@
 # Elegantrix - AI-Powered Real Estate Platform
 
-A modern real estate platform with AI-powered search and PDF contract analysis capabilities.
+A comprehensive real estate platform that combines AI-powered search, PDF lease analysis, and nearby facility search to help users find their perfect home.
 
-## Features
+## 🚀 Features
 
-- **AI-Powered Search**: Intelligent property search with natural language queries
-- **PDF Contract Analysis**: Upload and analyze rental agreements with LLM
-- **User Authentication**: Secure login/register system
-- **Advanced Filtering**: Location, price, property type, and time-based filters
-- **Real-time Results**: Instant search results with relevance scoring
+### 1. **AI-Powered Property Search**
+- Advanced filtering with multiple criteria
+- AI-enhanced search results
+- Real-time property recommendations
 
-## Project Structure
+### 2. **Rent Lease Analysis**
+- PDF upload and analysis
+- AI-powered contract review
+- Summary and potential issues identification
+- Copy-to-clipboard functionality
 
-```
-Express-project/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── utils/          # Frontend utilities
-│   │   └── styles/         # CSS files
-├── server/                 # Express backend
-│   ├── services/           # Business logic services
-│   │   ├── llmService.js   # LLM API integration
-│   │   └── pdfAnalysisService.js # PDF processing
-│   ├── routes/             # API routes
-│   ├── utils/              # Backend utilities
-│   ├── models/             # Database models
-│   └── middleware/         # Express middleware
-```
+### 3. **Nearby Search**
+- Address-based location search
+- Google Maps integration
+- Categorized nearby facilities:
+  - 🏥 Hospitals & Medical Centers
+  - 🍽️ Restaurants & Cafes
+  - 🚇 Transportation Hubs
+  - 🎓 Schools & Universities
+  - 🛍️ Shopping Centers
+  - 🌳 Parks & Recreation
+  - 🏦 Banks & ATMs
+  - 💊 Pharmacies
 
-## Tech Stack
-
-### Frontend
-- React 18
-- CSS3 with custom styling
-- Fetch API for HTTP requests
-
-### Backend
-- Node.js with Express
-- MongoDB with Mongoose
-- PDF parsing with pdf-parse
-- LLM integration with OpenRouter API
-- Tavily search integration
-
-## Setup Instructions
+## 🛠️ Installation
 
 ### Prerequisites
-- Node.js 16+
-- MongoDB (optional, for user authentication)
-- OpenRouter API key
-- Tavily API key
+- Node.js (v14 or higher)
+- npm or yarn
+- Google Maps API key
 
-### Installation
+### Setup
 
 1. **Clone the repository**
    ```bash
@@ -61,84 +45,133 @@ Express-project/
 
 2. **Install dependencies**
    ```bash
-   # Install backend dependencies
+   # Install server dependencies
    cd server
    npm install
 
-   # Install frontend dependencies
+   # Install client dependencies
    cd ../client
    npm install
    ```
 
 3. **Environment Configuration**
 
-   Create `.env` file in the server directory:
+   Create a `.env` file in the `server` directory:
    ```env
-   OPENROUTER_API_KEY=your_openrouter_api_key
-   TAVILY_API_KEY=your_tavily_api_key
+   # Database
    MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
+
+   # JWT
+   JWT_SECRET=your_jwt_secret_key
+
+   # OpenRouter API (for LLM)
+   OPENROUTER_API_KEY=your_openrouter_api_key
+
+   # Google Maps API
+   GOOGLE_MAPS_API_KEY=your_google_maps_api_key
    ```
 
-4. **Start the application**
+4. **Google Maps API Setup**
+
+   You'll need to enable the following Google Maps APIs:
+   - **Geocoding API**: For converting addresses to coordinates
+   - **Places API**: For searching nearby places
+
+   Get your API key from [Google Cloud Console](https://console.cloud.google.com/)
+
+5. **Start the application**
    ```bash
-   # Start backend server (from server directory)
+   # Start the server (from server directory)
+   cd server
    npm start
 
-   # Start frontend (from client directory)
+   # Start the client (from client directory)
+   cd client
    npm start
    ```
 
-## API Endpoints
+## 📁 Project Structure
+
+```
+Express-project/
+├── client/                 # React frontend
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   │   └── NearbySearch.js
+│   │   ├── utils/          # Utility functions
+│   │   └── ...
+├── server/                 # Node.js backend
+│   ├── services/           # Business logic services
+│   │   ├── llmService.js
+│   │   ├── pdfAnalysisService.js
+│   │   └── googleMapsService.js
+│   ├── routes/             # API routes
+│   ├── utils/              # Utility functions
+│   └── ...
+└── README.md
+```
+
+## 🔧 API Endpoints
 
 ### Authentication
 - `POST /api/register` - User registration
 - `POST /api/login` - User login
 - `GET /api/profile` - Get user profile
 
-### Search & Analysis
-- `POST /api/search` - Direct LLM search
-- `POST /api/rag` - RAG-powered search with Tavily
-- `POST /api/analyze-pdf` - PDF contract analysis
+### Property Search
+- `POST /api/search` - AI-powered property search
+- `POST /api/rag` - RAG-enhanced search
 
-## Key Features
+### PDF Analysis
+- `POST /api/analyze-pdf` - Analyze PDF lease documents
 
-### PDF Contract Analysis
-- Upload rental agreement PDFs
-- Automatic text extraction and chunking
-- LLM-powered analysis for:
-  - Contract summary
-  - Potential issues identification
-  - Risk assessment
+### Nearby Search
+- `POST /api/geocode` - Convert address to coordinates
+- `POST /api/nearby-search` - Search for nearby places
+- `GET /api/place-details/:placeId` - Get detailed place information
+
+## 🎨 UI Features
+
+### Responsive Design
+- Three-column layout on desktop
+- Responsive design for tablets and mobile
+- Consistent styling across all components
+
+### User Experience
+- Loading indicators with spinners
+- Error handling with user-friendly messages
 - Copy-to-clipboard functionality
+- Clear and intuitive interface
 
-### AI Search
-- Natural language property queries
-- Advanced filtering options
-- Relevance scoring
-- Real-time results
+## 🔒 Security
 
-## Development
+- JWT-based authentication
+- Environment variable protection
+- Input validation and sanitization
+- Secure file upload handling
 
-### Code Organization
-- **Services**: Business logic separated into dedicated service classes
-- **Routes**: Clean API endpoint definitions
-- **Utils**: Shared utilities and templates
-- **Components**: Reusable React components
+## 🚀 Deployment
 
-### Error Handling
-- Comprehensive error handling with retry mechanisms
-- Rate limiting protection (429 errors)
-- Detailed error logging and user feedback
+### Backend Deployment
+1. Set up environment variables on your hosting platform
+2. Deploy to your preferred Node.js hosting service (Heroku, Vercel, etc.)
 
-## Contributing
+### Frontend Deployment
+1. Build the React app: `npm run build`
+2. Deploy to your preferred static hosting service
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support and questions, please open an issue in the repository.
