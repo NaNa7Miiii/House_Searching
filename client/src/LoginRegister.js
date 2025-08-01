@@ -46,7 +46,7 @@ export default function LoginRegister({ onLogin }) {
   return (
     <div className="login-register-container">
       <div className="card">
-        <h2 className="app-title">Elegantrix</h2>
+        <h2 className="app-title">HomeQuest</h2>
         <h3>{mode === "login" ? "Login" : "Register"}</h3>
         <form onSubmit={handleSubmit}>
           <input

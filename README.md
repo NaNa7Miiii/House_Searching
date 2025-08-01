@@ -1,4 +1,4 @@
-# Elegantrix - AI-Powered Real Estate Platform
+# HomeQuest - AI-Powered Real Estate Platform
 
 A comprehensive real estate platform that combines AI-powered search, PDF lease analysis, and nearby facility search to help users find their perfect home.
 
