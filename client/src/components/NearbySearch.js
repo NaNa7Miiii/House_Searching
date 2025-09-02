@@ -142,6 +142,38 @@ function NearbySearch() {
     setResults(null);
 
     try {
+      // 首先进行地址解析，让用户确认
+      const geocodeResponse = await fetch(`${API_BASE}/geocode`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          address: address.trim()
+        }),
+      });
+
+      const geocodeData = await geocodeResponse.json();
+
+      if (!geocodeResponse.ok) {
+        throw new Error(geocodeData.error || 'Address geocoding failed');
+      }
+
+      // 显示地址解析结果，让用户确认
+      const confirmed = window.confirm(
+        `Google Maps resolved your address to:\n\n` +
+        `📍 ${geocodeData.formattedAddress}\n` +
+        `Lat: ${geocodeData.lat.toFixed(6)}\n` +
+        `Lng: ${geocodeData.lng.toFixed(6)}\n\n` +
+        `Is this the correct location? Click OK to continue searching nearby places.`
+      );
+
+      if (!confirmed) {
+        setLoading(false);
+        return;
+      }
+
+      // 用户确认后，搜索附近地点
       const response = await fetch(`${API_BASE}/nearby-search`, {
         method: 'POST',
         headers: {
@@ -256,6 +288,9 @@ function NearbySearch() {
                     placeholder="Enter an address (e.g., Times Square, New York)"
                     disabled={loading}
                   />
+                  <div className="address-tip">
+                    💡 <strong>Tip:</strong> Use standard address format: Street, City, Province, Postal Code
+                  </div>
                 </div>
               </div>
 
@@ -345,6 +380,15 @@ function NearbySearch() {
               </div>
 
               <div className="form-actions">
+                {/* 显示当前选择的类型 */}
+                {selectedTypes.length > 0 && (
+                  <div className="selected-types-summary">
+                    <div className="summary-text">
+                      Will search for: <strong>{selectedTypes.length}</strong> type{selectedTypes.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                )}
+
                 <button type="submit" className="search-btn" disabled={loading}>
                   {loading ? (
                     <>
@@ -391,7 +435,9 @@ function NearbySearch() {
             <div className="sidebar-card">
               <div className="sidebar-card-header">
                 <h4>Search Results</h4>
-                <div className="results-count">{Object.values(results.nearbyPlaces || {}).flat().length} places found</div>
+                <div className="results-count">
+                  {Object.values(results.nearbyPlaces || {}).flat().length} places found
+                </div>
               </div>
               <div className="results-summary">
                 <div className="location-info">
@@ -399,6 +445,15 @@ function NearbySearch() {
                   <div className="location-coords">
                     Lat: {results.location.lat.toFixed(6)}, Lng: {results.location.lng.toFixed(6)}
                   </div>
+                </div>
+                {/* 添加类别统计信息 */}
+                <div className="category-stats">
+                  <div className="stats-title">Categories found:</div>
+                  {Object.entries(results.nearbyPlaces || {}).map(([category, places]) => (
+                    <div key={category} className="category-stat">
+                      {formatTypeName(category)}: {places.length} places
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -425,6 +480,10 @@ function NearbySearch() {
                         )}
                       </div>
                       <div className="place-address">{place.address}</div>
+                      {/* 添加类型信息 */}
+                      <div className="place-type">
+                        <span className="type-badge">{place.type || place.category}</span>
+                      </div>
                     </div>
                   ))}
                 </div>

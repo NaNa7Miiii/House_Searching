@@ -20,13 +20,15 @@ const STORAGE_KEYS = {
 
 function UserAvatar({ username, onClick }) {
   const initial = username ? username[0].toUpperCase() : "?";
+  const hasValidUsername = username && username.trim().length > 0;
+
   return (
     <div
-      className="user-avatar"
+      className={`user-avatar ${!hasValidUsername ? 'user-avatar-error' : ''}`}
       onClick={onClick}
-      title="Profile"
+      title={hasValidUsername ? `Profile - ${username}` : "Profile - User not found"}
     >
-      {initial}
+      {hasValidUsername ? initial : "?"}
     </div>
   );
 }
@@ -400,7 +402,6 @@ function PropertySearch({ onSearch, initialFilters }) {
       .then((res) => res.json())
       .then((data) => {
         setLoading(false);
-        // 调用父组件的handleSearch函数
         if (onSearch) {
           onSearch(data, filters);
         }
@@ -915,6 +916,96 @@ function App() {
   const [searchResults, setSearchResults] = useState(null);
   const [currentFilters, setCurrentFilters] = useState(null);
   const [activeTab, setActiveTab] = useState('rent-lease');
+  const [notification, setNotification] = useState(null);
+
+  // Check token validity and auto-logout if expired
+  const checkTokenValidity = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      handleLogout();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          // Try to refresh token first
+          console.log('Token expired, attempting to refresh...');
+          const refreshSuccess = await refreshToken();
+          if (!refreshSuccess) {
+            console.log('Token refresh failed, logging out...');
+            handleLogout();
+          }
+          return;
+        }
+        throw new Error('Profile fetch failed');
+      }
+
+      const data = await response.json();
+      const user = data.username || "";
+      setUsername(user);
+      localStorage.setItem(STORAGE_KEYS.USERNAME, user);
+    } catch (error) {
+      console.error('Token validation error:', error);
+      // Try to refresh token on any error
+      const refreshSuccess = await refreshToken();
+      if (!refreshSuccess) {
+        handleLogout();
+      }
+    }
+  };
+
+  // Refresh token function
+  const refreshToken = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      handleLogout();
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.token);
+        if (data.username) {
+          setUsername(data.username);
+          localStorage.setItem(STORAGE_KEYS.USERNAME, data.username);
+        }
+        setNotification({ type: 'success', message: 'Token refreshed successfully' });
+        setTimeout(() => setNotification(null), 3000);
+        console.log('Token refreshed successfully');
+        return true;
+      } else {
+        setNotification({ type: 'error', message: 'Token refresh failed' });
+        setTimeout(() => setNotification(null), 3000);
+        console.log('Token refresh failed');
+        return false;
+      }
+    } catch (error) {
+      setNotification({ type: 'error', message: 'Token refresh error: ' + error.message });
+      setTimeout(() => setNotification(null), 3000);
+      console.error('Token refresh error:', error);
+      return false;
+    }
+  };
+
+  // Show notification function
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 3000);
+  };
 
   // Load saved data from localStorage on app mount
   useEffect(() => {
@@ -946,21 +1037,16 @@ function App() {
     localStorage.setItem(STORAGE_KEYS.ACTIVE_TAB, activeTab);
   }, [activeTab]);
 
+  // Check token validity when logged in
   useEffect(() => {
     if (loggedIn) {
-      fetch(`${API_BASE}/profile`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          const user = data.username || "";
-          setUsername(user);
-          localStorage.setItem(STORAGE_KEYS.USERNAME, user);
-        })
-        .catch(() => {
-          setUsername("");
-          localStorage.removeItem(STORAGE_KEYS.USERNAME);
-        });
+      // Check immediately
+      checkTokenValidity();
+
+      // Set up periodic token validation (every 5 minutes)
+      const tokenCheckInterval = setInterval(checkTokenValidity, 5 * 60 * 1000);
+
+      return () => clearInterval(tokenCheckInterval);
     }
   }, [loggedIn]);
 
@@ -1021,6 +1107,13 @@ function App() {
 
   return (
     <div>
+      {/* Notification */}
+      {notification && (
+        <div className={`notification ${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
+
       <nav className="navbar">
         <div className="navbar-title">HomeQuest</div>
         {loggedIn && (
@@ -1036,8 +1129,24 @@ function App() {
         ) : showProfile ? (
           <div className="profile-card">
             <h2>Profile</h2>
-            <div><b>Username:</b> {username}</div>
-            <button onClick={handleLogout}>Logout</button>
+            <div className="profile-info">
+              <div className="profile-item">
+                <b>Username:</b> {username || "Not available"}
+              </div>
+              <div className="profile-item">
+                <b>Status:</b>
+                <span className={`status-indicator ${username ? 'status-active' : 'status-error'}`}>
+                  {username ? 'Active' : 'Error - Please refresh or re-login'}
+                </span>
+              </div>
+              <div className="profile-item">
+                <b>Last Updated:</b> {new Date().toLocaleString()}
+              </div>
+            </div>
+            <div className="profile-actions">
+              <button onClick={refreshToken} className="refresh-btn">Refresh Token</button>
+              <button onClick={handleLogout} className="logout-btn">Logout</button>
+            </div>
           </div>
         ) : (
           <div className="new-layout">

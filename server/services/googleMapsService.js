@@ -17,9 +17,11 @@ class GoogleMapsService {
         throw new Error('Google Maps API key is required');
       }
 
+      const cleanedAddress = this.cleanAddress(address);
+
       const response = await this.client.geocode({
         params: {
-          address: address,
+          address: cleanedAddress,
           key: this.apiKey
         }
       });
@@ -29,15 +31,30 @@ class GoogleMapsService {
       }
 
       const location = response.data.results[0].geometry.location;
+      const result = response.data.results[0];
+
       return {
         lat: location.lat,
         lng: location.lng,
-        formattedAddress: response.data.results[0].formatted_address
+        formattedAddress: result.formatted_address,
+        originalAddress: address,
+        cleanedAddress: cleanedAddress,
+        confidence: result.geometry.location_type || 'unknown'
       };
     } catch (error) {
       console.error('Geocoding error:', error.message);
       throw error;
     }
+  }
+
+  // Clean and standardize address format
+  cleanAddress(address) {
+    return address
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/[,\s]+/g, ', ')
+      .replace(/,\s*,/g, ',')
+      .replace(/^,+|,+$/g, '');
   }
 
   // Search for nearby places using Places API
@@ -71,31 +88,53 @@ class GoogleMapsService {
   }
 
   // Search for multiple types of places
-  async searchMultipleTypes(lat, lng, radius = 1000) {
-    const placeTypes = [
-      { type: 'hospital', name: 'Hospitals & Medical Centers' },
-      { type: 'restaurant', name: 'Restaurants & Cafes' },
-      { type: 'transit_station', name: 'Transportation Hubs' },
-      { type: 'school', name: 'Schools & Universities' },
-      { type: 'shopping_mall', name: 'Shopping Centers' },
-      { type: 'park', name: 'Parks & Recreation' },
-      { type: 'bank', name: 'Banks & ATMs' },
-      { type: 'pharmacy', name: 'Pharmacies' }
-    ];
+  async searchMultipleTypes(lat, lng, radius = 1000, selectedTypes = null) {
+    let placeTypes = [];
+
+    if (selectedTypes && selectedTypes.length > 0) {
+      placeTypes = selectedTypes.map(type => ({
+        type: type,
+        name: this.formatTypeName(type)
+      }));
+    } else {
+      placeTypes = [
+        { type: 'hospital', name: 'Hospitals & Medical Centers' },
+        { type: 'restaurant', name: 'Restaurants & Cafes' },
+        { type: 'transit_station', name: 'Transportation Hubs' },
+        { type: 'school', name: 'Schools & Universities' },
+        { type: 'shopping_mall', name: 'Shopping Centers' },
+        { type: 'park', name: 'Parks & Recreation' },
+        { type: 'bank', name: 'Banks & ATMs' },
+        { type: 'pharmacy', name: 'Pharmacies' }
+      ];
+    }
 
     const results = {};
 
     for (const placeType of placeTypes) {
       try {
         const places = await this.searchNearbyPlaces(lat, lng, radius, placeType.type);
-        results[placeType.name] = places.slice(0, 5); // Limit to 5 results per category
+        if (places && places.length > 0) {
+          const placesWithType = places.map(place => ({
+            ...place,
+            category: placeType.name,
+            type: placeType.type
+          }));
+          results[placeType.name] = placesWithType.slice(0, 5); // Limit to 5 results per category
+        }
       } catch (error) {
         console.error(`Error searching for ${placeType.name}:`, error.message);
-        results[placeType.name] = [];
       }
     }
 
     return results;
+  }
+
+  // Helper method to format type names
+  formatTypeName(type) {
+    return type.split('_').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   }
 
   // Get place details for more information

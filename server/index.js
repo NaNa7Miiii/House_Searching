@@ -76,7 +76,7 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: '2h' } // expiration time
+      { expiresIn: '7d' } // expiration time - changed from 2h to 7d
     );
     res.json({ message: 'Login successful.', token });
   } catch (err) {
@@ -85,8 +85,48 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.get('/api/profile', authMiddleware, async (req, res) => {
-  const user = await User.findById(req.user.userId).select('-password');
-  res.json(user);
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Ensure we return the complete user object with username
+    res.json({
+      userId: user._id,
+      username: user.username,
+      message: 'Profile retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    res.status(500).json({ message: 'Server error while fetching profile.' });
+  }
+});
+
+// Token refresh endpoint
+app.post('/api/refresh-token', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Generate new token
+    const newToken = jwt.sign(
+      { userId: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Token refreshed successfully.',
+      token: newToken,
+      username: user.username
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({ message: 'Server error while refreshing token.' });
+  }
 });
 
 // launch server

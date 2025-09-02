@@ -88,7 +88,55 @@ Please identify:
 Focus on issues that could cause problems for either party.`
 };
 
+// 3. RAG Query Template for Housing Search
+const filterTemplate = (query, searchResults) => {
+  // Filter and format housing-related search results
+  const housingResults = searchResults
+    .map((result, index) => {
+      const title = result.title || 'No title';
+      const content = result.content || result.snippet || 'No content';
+      const url = result.url || 'No URL';
+
+      return `${index + 1}. ${title}\n   Content: ${content}\n   Source: ${url}`;
+    })
+    .join('\n\n');
+
+  return `You are a housing and real estate expert. Based on the following search results, please provide a comprehensive analysis and answer to the user's housing-related question: "${query}"
+
+Search Results:
+${housingResults}
+
+Please provide a detailed response that includes:
+
+1. **Direct Answer**: A clear, concise answer to the user's question based on the search results
+
+2. **Key Information Summary**:
+   - Important details about properties, locations, or housing options
+   - Relevant prices, availability, and conditions
+   - Notable features or amenities mentioned
+
+3. **Market Insights**:
+   - Any market trends or patterns identified
+   - Comparative information if multiple options are available
+   - Location-specific details and advantages
+
+4. **Practical Recommendations**:
+   - Suggestions based on the search results
+   - What to consider when making housing decisions
+   - Any red flags or positive indicators mentioned
+
+5. **Additional Considerations**:
+   - Important factors not explicitly mentioned but relevant
+   - Questions the user might want to ask
+   - Next steps for their housing search
+
+Format your response in a clear, structured manner with bullet points where appropriate. Focus on being helpful and actionable for someone looking for housing information.
+
+If the search results don't contain enough information to fully answer the question, acknowledge this and suggest what additional information might be needed.`;
+};
+
 module.exports = {
   queryTemplate,
-  pdfAnalysisTemplates
+  pdfAnalysisTemplates,
+  filterTemplate
 };

@@ -2,8 +2,6 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { tavily_search } = require('./tavily_search');
-const { filterTemplate, summarizeTemplate } = require('../utils/templates');
-const llmService = require('../services/llmService');
 const pdfAnalysisService = require('../services/pdfAnalysisService');
 const googleMapsService = require('../services/googleMapsService');
 
@@ -44,18 +42,29 @@ router.post('/rag', async (req, res) => {
   try {
     // 1. Use Tavily search
     const searchResults = await tavily_search(query);
-    console.log('Search results:', searchResults.length, 'items');
+    console.log('Search results:', searchResults);
 
-    // 2. Build prompt
-    const prompt = filterTemplate(query, searchResults);
+    // 检查搜索结果的有效性
+    if (!searchResults || !Array.isArray(searchResults.results)) {
+      console.error('Invalid search results format:', typeof searchResults, searchResults);
+      return res.status(500).json({
+        error: 'Invalid search results format',
+        details: 'Search API returned unexpected data format'
+      });
+    }
 
-    // 3. Call LLM
-    const answer = await llmService.searchQuery(prompt);
+    console.log('Search results:', searchResults.results.length, 'items');
 
-    // 4. Return results
+    // 2. 直接使用Tavily的answer作为summary，不再调用LLM
+    const answer = searchResults.answer || 'No summary available';
+    const results = searchResults.results || [];
+
+    // 3. Return results with Tavily's answer
     res.json({
       answer,
-      results: searchResults
+      results,
+      query: searchResults.query,
+      responseTime: searchResults.response_time
     });
 
   } catch (error) {
@@ -83,7 +92,7 @@ router.post('/geocode', async (req, res) => {
 
 // Google Maps - Search nearby places
 router.post('/nearby-search', async (req, res) => {
-  const { address, radius = 1000 } = req.body;
+  const { address, radius = 1000, types } = req.body;
 
   try {
     if (!address) {
@@ -93,11 +102,12 @@ router.post('/nearby-search', async (req, res) => {
     // First geocode the address
     const location = await googleMapsService.geocodeAddress(address);
 
-    // Then search for nearby places
+    // Then search for nearby places with user-selected types
     const nearbyPlaces = await googleMapsService.searchMultipleTypes(
       location.lat,
       location.lng,
-      radius
+      radius,
+      types // Pass user-selected types
     );
 
     res.json({

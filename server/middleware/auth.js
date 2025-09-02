@@ -8,7 +8,7 @@ function authMiddleware(req, res, next) {
   }
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.status(403).json({ message: 'Invalid token.' });
-    req.user = user; // 附加用户信息到请求对象
+    req.user = user;
     next();
   });
 }
